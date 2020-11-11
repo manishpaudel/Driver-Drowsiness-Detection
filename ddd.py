@@ -1,5 +1,5 @@
-# import cv2 as cv
-from inference import preprocessing, load_to_IE, sync_inference, async_inference, get_async_output, get_input_shape
+import cv2 as cv
+# from inference import preprocessing
 from imutils import face_utils
 import dlib
 import numpy as np
@@ -8,19 +8,9 @@ from time import sleep
 import pygame
 
 
-model = "face-detection-adas-0001/INT8/face-detection-adas-0001.xml"
-image_name = "manish.jpg"
-#image = cv.imread(image_name)
-headpose_model = "head-pose-estimation-adas-0001/head-pose-estimation-adas-0001.xml"
 dlib_model = "shape_predictor_68_face_landmarks.dat"
 	
-#shape of input
 
-n, c, h, w = get_input_shape(model)
-nn,cc,hh,ww = get_input_shape(headpose_model)
-
-exec_net = load_to_IE(model)
-exec_net_headpose = load_to_IE(headpose_model)
 
 #for dlib models
 detector = dlib.get_frontal_face_detector()
@@ -88,86 +78,62 @@ def main():
 		
 		
 		#cv.putText(frame,"is doing",(100,100),cv.FONT_HERSHEY_COMPLEX, 1, (255,255,255))
-		preprocessed_image = preprocessing(frame, h, w)
-		result = sync_inference(exec_net, image = preprocessed_image)
-		#print(result.keys())
-		result = result['detection_out']
-		#print(result)
+		# preprocessed_image = preprocessing(frame, h, w)
+		
 		
 		#setting bounding box color, image height and width
 		color = (0,0,255)
 		height = frame.shape[0]
 		width = frame.shape[1]
 
-		#we get output blob as [1*1*N*7] that means result[0][0][i] will give result of i-th box.
-		#Each box has 7 numbers (last digit(7) of the output blob). 
-		#3rd index numbered 2 gives the confidence
-		#4th, 5th, 6th, 7th indices numbered 3,4,5,6 resp. give xmin, ymin, xmax, ymax
-
+		
 		#incase no face detected, crop will be unresolved variable
 		crop = frame[0:1, 0:1]
 		#iterating over the detected boxes
-		for i in range(len(result[0][0])):
-			box = result[0][0][i]	#result of i-th box
-			confidence = box[2]
-			if confidence > 0.5:
-				xmin = int(box[3] * width)
-				ymin = int(box[4] * height)
-				xmax = int(box[5] * width)
-				ymax = int(box[6] * height)
-				#print(str(xmin)+", "+str(ymin)+", "+str(xmax)+", "+str(ymax))
-
-				#Drawing the box with image
-				cv.rectangle(frame,(xmin,ymin),(xmax,ymax),color,1)
-				#cv.putText(frame, str(i), (50,50),cv.FONT_HERSHEY_COMPLEX, 1, (255,255,255))
-				if xmin<0:
-					xmin = 0
-				if ymin<0:
-					ymin = 0
-				crop = frame[ymin-30: ymax+30, xmin-30:xmax+30]
+		
 
 		
 
-		processed_crop = preprocessing(crop, hh, ww)
-		new_res = sync_inference(exec_net_headpose, image = processed_crop)
+		# processed_crop = preprocessing(crop, hh, ww)
+		# new_res = sync_inference(exec_net_headpose, image = processed_crop)
 
-		yaw = new_res['angle_y_fc'][0]
-		pitch = new_res['angle_p_fc'][0]
-		roll = new_res['angle_r_fc'][0]
+		# yaw = new_res['angle_y_fc'][0]
+		# pitch = new_res['angle_p_fc'][0]
+		# roll = new_res['angle_r_fc'][0]
 
 		# cv.putText(frame,"yaw: {}".format(str(yaw)), (20,30),cv.FONT_HERSHEY_COMPLEX, 1, color,1)
 		# cv.putText(frame,"pitch: {}".format(str(pitch)), (20,60),cv.FONT_HERSHEY_COMPLEX, 1, color,1)
 		# cv.putText(frame,"roll: {}".format(str(roll)), (20,90),cv.FONT_HERSHEY_COMPLEX, 1, color,1)
 
-		if pitch > -15 and pitch < 25:
-			cv.putText(frame,"straight face", (20,60),cv.FONT_HERSHEY_COMPLEX, 1, color,1)
-			nodding = False
+		# if pitch > -15 and pitch < 25:
+		# 	cv.putText(frame,"straight face", (20,60),cv.FONT_HERSHEY_COMPLEX, 1, color,1)
+		# 	nodding = False
 
 
-		elif pitch > 25:
-			cv.putText(frame,"facing downwards", (20,60),cv.FONT_HERSHEY_COMPLEX, 1, color,1)
-			if not nodding:
-				nodding = True
-				nod_time = time.now()
+		# elif pitch > 25:
+		# 	cv.putText(frame,"facing downwards", (20,60),cv.FONT_HERSHEY_COMPLEX, 1, color,1)
+		# 	if not nodding:
+		# 		nodding = True
+		# 		nod_time = time.now()
 
-			if nodding:
-				if datetime.now() - nod_time >= timedelta(seconds = 2):
-					nod_count += 1
-					print("nod count= "+ str(nod_count))
-					nod_time = time.now()
-					if voice.get_busy() == 0:
-						voice.play(sound)
+		# 	if nodding:
+		# 		if datetime.now() - nod_time >= timedelta(seconds = 2):
+		# 			nod_count += 1
+		# 			print("nod count= "+ str(nod_count))
+		# 			nod_time = time.now()
+		# 			if voice.get_busy() == 0:
+		# 				voice.play(sound)
 
 
-		elif pitch < -15:
-			cv.putText(frame,"facing upwards", (20,60),cv.FONT_HERSHEY_COMPLEX, 1, color,1)
-			nodding = False
+		# elif pitch < -15:
+		# 	cv.putText(frame,"facing upwards", (20,60),cv.FONT_HERSHEY_COMPLEX, 1, color,1)
+		# 	nodding = False
 		
 
 		#feed frame face to dlib
 		# print(crop.shape)
-		
-		crop_dlib = cv.resize(crop, (300,300))
+		nod_count = 0
+		crop_dlib = cv.resize(frame, (300,300))
 		gray = cv.cvtColor(crop_dlib, cv.COLOR_BGR2GRAY)
 		clahe = cv.createCLAHE(clipLimit=2.0,tileGridSize=(8,8))
 		gray = clahe.apply(gray)
@@ -332,10 +298,10 @@ def get_mEARS():
 		frame = cv.flip(frame, 1)
 		
 		
-		preprocessed_image = preprocessing(frame, h, w)
-		result = sync_inference(exec_net, image = preprocessed_image)
+		# preprocessed_image = preprocessing(frame, h, w)
+		# result = sync_inference(exec_net, image = preprocessed_image)
 		
-		result = result['detection_out']
+		# result = result['detection_out']
 		
 		
 		#setting bounding box color, image height and width
@@ -345,24 +311,24 @@ def get_mEARS():
 
 		crop = frame[0:1, 0:1]
 		#iterating over the detected boxes
-		for i in range(len(result[0][0])):
-			box = result[0][0][i]	#result of i-th box
-			confidence = box[2]
-			if confidence > 0.5:
-				xmin = int(box[3] * width)
-				ymin = int(box[4] * height)
-				xmax = int(box[5] * width)
-				ymax = int(box[6] * height)
-				#print(str(xmin)+", "+str(ymin)+", "+str(xmax)+", "+str(ymax))
+		# for i in range(len(result[0][0])):
+		# 	box = result[0][0][i]	#result of i-th box
+		# 	confidence = box[2]
+		# 	if confidence > 0.5:
+		# 		xmin = int(box[3] * width)
+		# 		ymin = int(box[4] * height)
+		# 		xmax = int(box[5] * width)
+		# 		ymax = int(box[6] * height)
+		# 		#print(str(xmin)+", "+str(ymin)+", "+str(xmax)+", "+str(ymax))
 
-				#Drawing the box with image
-				cv.rectangle(frame,(xmin,ymin),(xmax,ymax),color,1)
-				#cv.putText(frame, str(i), (50,50),cv.FONT_HERSHEY_COMPLEX, 1, (255,255,255))
-				if xmin<0:
-					xmin = 0
-				if ymin<0:
-					ymin = 0
-				crop = frame[ymin-0:ymax+30, xmin-30:xmax+30]
+		# 		#Drawing the box with image
+		# 		cv.rectangle(frame,(xmin,ymin),(xmax,ymax),color,1)
+		# 		#cv.putText(frame, str(i), (50,50),cv.FONT_HERSHEY_COMPLEX, 1, (255,255,255))
+		# 		if xmin<0:
+		# 			xmin = 0
+		# 		if ymin<0:
+		# 			ymin = 0
+		# 		crop = frame[ymin-0:ymax+30, xmin-30:xmax+30]
 				
 
 
@@ -370,7 +336,7 @@ def get_mEARS():
 
 		#feed frame face to dlib
 		# print(crop.shape)
-		crop_dlib = cv.resize(crop, (300,300))
+		crop_dlib = cv.resize(frame, (300,300))
 		gray = cv.cvtColor(crop_dlib, cv.COLOR_BGR2GRAY)
 		clahe = cv.createCLAHE(clipLimit=2.0,tileGridSize=(8,8))
 		gray = clahe.apply(gray)

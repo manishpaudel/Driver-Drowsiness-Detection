@@ -1,4 +1,4 @@
-import cv2
+# import cv2
 from openvino.inference_engine import IECore, IENetwork
 
 cpu_ext_dll = "C:/Program Files (x86)/IntelSWTools/openvino_2019.3.379/deployment_tools/inference_engine/bin/intel64/Release/cpu_extension_avx2.dll"

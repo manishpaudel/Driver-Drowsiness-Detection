@@ -3,45 +3,19 @@ import numpy as np
 import math
 
 def equalizeHist(img):
-	with np.errstate(divide='ignore', invalid='ignore'):
-		# bgr = np.float32(img)/255
-
-		# b = bgr[:,:,0]
-		# g = bgr[:,:,1]
-		# r = bgr[:,:,2]
-		b,g,r = cv2.split(img)
-		b = b/255
-		g = g/255
-		r = r/255
-		print(b)
-		print(g)
-		print(r)
-
-		#for intensity
-		I = np.divide(r+g+b, 3)
-
-		#for saturation
-		min = np.minimum(np.minimum(r,g),b)
-		S = 1 - ((3/(r+g+b)) * min)
-
-		#for hue
-		H = np.copy(r)
-
-		for i in range(0, b.shape[0]):
-			for j in range(0, b.shape[1]):
-				H[i][j] = 0.5 * ((r[i][j] - g[i][j]) + (r[i][j] - b[i][j])) /  math.sqrt((r[i][j] - g[i][j])**2 + ((r[i][j] - b[i][j]) * (g[i][j] - b[i][j])))
-				H[i][j] = math.acos(H[i][j])
-
-				if b[i][j] <= g[i][j]:
-					H[i][j] = H[i][j]
-				else:
-					H[i][j] = ((360 * math.pi) / 180.0) - H[i][j]
-		print(H)
-	hsi = cv2.merge((H,S,I))
+	hls=cv2.cvtColor(img,cv2.COLOR_BGR2HLS)
+	channels=cv2.split(hls)
+	# print(np.mean(channels[0]))
+	if(np.mean(channels[1] ) < 127):
+		# clahe = cv2.createCLAHE(clipLimit=16.0,tileGridSize=(8,8))
+		# channels[1] = clahe.apply(channels[1])
+		cv2.equalizeHist(channels[1],channels[1])
+		cv2.merge(channels,hls)
+		cv2.cvtColor(hls,cv2.COLOR_HLS2BGR,img)
 	
-	cv2.imwrite("hsi.jpg",hsi)
+	cv2.imwrite("hsi-harsh.jpg",hls)
 
 
 if __name__ == '__main__':
-	img = cv2.imread("sourceImg.jpg")
+	img = cv2.imread("harsh.jpg")
 	equalizeHist(img)
